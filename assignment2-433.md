@@ -3,16 +3,19 @@ assignment2-433
 Chenshuo Pan
 2022-10-07
 
+\[<https://github.com/cspan6/STAT-433-assignment>\]
+
 **This file analyzes the delays at New York airports at different times
 of the day, considering that the number of flights in each period is
-different, so here I use the ratio as a measure. The delay data is
-analyzed in combination with factors such as seasons, different
-airports, airlines, etc., and some experiments are carried out based on
-my own experience. In general, it is recommended to take flights in the
-mornings in winter and evenings in summer, and there is not much
-difference between the three airports in New York. Recommend United
-Airline in airline selection, Southwest Airlines in the evening, not
-Virgin America at noon.**
+different, so here I use the ratio（Punctuality rate） as a measure. The
+on-time data is analyzed in combination with factors such as seasons,
+different airports, airlines, etc., and some experiments are carried out
+based on my own experience. In general, it is recommended to take
+flights in the mornings ,and do not take flights in winter and evenings
+in summer, and there is not much difference between the three airports
+in New York(do not choose EWR when you need to flight after 15:00).
+Recommend Delta in airline selection, Mesa in the evening, Virgin
+America at noon.**
 
 ``` r
 library(dplyr)
@@ -89,7 +92,7 @@ flights <-nycflights13::flights
 ``` r
 flight<-flights%>%mutate(timeofday=
   flights$time_hour%>%substr(.,11,30),
-  on_time = if_else(condition = arr_delay>0,
+  on_time = if_else(condition = arr_delay<=0,
                            true = T,
                            false = F,
                            missing = F)  )
@@ -97,7 +100,7 @@ flight<-flights%>%mutate(timeofday=
 
 ``` r
 flight1<-flight%>%
-  filter(on_time==FALSE)%>%
+  filter(on_time==TRUE)%>%
   group_by(timeofday)%>%
   summarize(n = n())%>%left_join(flight%>%
   group_by(timeofday)%>%
@@ -142,17 +145,20 @@ flight%>%
 
 **Here, I counted all the flight information in New York within a year,
 and grouped them by hour. It can be seen that there is no number of
-flights between 2-4am, and here I calculated the proportion of delayed
-flights (including cancellations). In fact, from Looking at this
-picture, we can only get a weak trend, a straight line with an
-insignificant slope, and the proportion of flight delays at about 9
-o’clock in the evening reaches the minimum.**
+flights between 2-4am, and here I calculated the proportion of ontime
+flights (excluding delay and cancellations). In fact, from Looking at
+this picture, we can only get a weak trend, a straight line with an
+insignificant slope, and the proportion of flight ontime at about 7
+o’clock at morning reaches the minimum.**
 
 ``` r
 ggplot(data = flight1)+
   geom_bar(mapping = aes(x = timeofday, y = n),stat="identity")+
   geom_line(aes(x = timeofday,y = proportion*10000),group = 20,color="red")+
-  theme(axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = 0.5))
+  theme(axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = 0.5))+
+  xlab("hour of day")+
+  ylab("total numebr of ontime flights")+
+  ggtitle("Total number of flights ontime versus flight distance(Barplot) ")
 ```
 
 ![](assignment2-433_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
@@ -177,17 +183,21 @@ flight_season2 <- flight%>%mutate(season = case_when(
   month%in%c(3,4,5)~"Spring",
   month%in%c(6,7,8)~"Summer",
   month%in%c(9,10,11)~"Autumn",
-  month%in%c(12,1,2)~"Winter"))%>%filter(on_time ==FALSE)%>%group_by(timeofday,season)%>%summarize(n = n())
+  month%in%c(12,1,2)~"Winter"))%>%filter(on_time ==TRUE)%>%group_by(timeofday,season)%>%summarize(n = n())
 ```
 
     ## `summarise()` has grouped output by 'timeofday'. You can override using the
     ## `.groups` argument.
 
 ``` r
-flight_season <-left_join(flight_season2,flight_season1)%>%mutate(proportion = n/total)
+flight_season <-left_join(flight_season1,flight_season2)%>%mutate(proportion = n/total)
 ```
 
     ## Joining, by = c("timeofday", "season")
+
+``` r
+flight_season[is.na(flight_season)]=0
+```
 
 ``` r
 flight_season%>%ggplot(aes(x = timeofday,
@@ -197,27 +207,28 @@ flight_season%>%ggplot(aes(x = timeofday,
 theme(axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = 0.5))+
   xlab("hour of day")+
   ylab("proportion of delay flights")+theme(legend.text = element_text(size = 8, colour = "red"))+
-  ggtitle("Average proportion of delays time of the day for the four seasons")
+  ggtitle("Average proportion of ontime flight vesus time of the day for the four seasons")
 ```
 
 ![](assignment2-433_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
 **Here, according to the four seasons, I have drawn the proportional
-curve of each time point. It can be clearly seen that the blue color is
-autumn, and the flight delay ratio is always higher than that of the
-other four seasons. At the same time, I noticed that before 13:00, the
-flight delay rate is the lowest in winter, and after that, the delay
-rate in summer is the lowest, so it is recommended to take flights in
-the morning in winter, and in the afternoon and evening in summer.
-Overall, all four seasons have the highest percentage of delays in the
-morning, and it is not recommended to take flights in the
-morning**
+curve of each time point of day. It can be clearly seen that the red
+color is autumn, and the flight ontime ratio is always higher than that
+of the other four seasons. At the same time, I noticed that before
+14:00, the ontime flight rate is the lowest in winter, and after that,
+the rate in summer is the lowest, so it is recommended do not to take
+flights in the morning in winter, and in the afternoon and evening in
+summer. Overall, Autumn is the best season,and all four seasons have the
+highest percentage of ontime in the morning, and it is not recommended
+to take flights in the evening if you want avoid
+delays**
 
 ``` r
 flight1<-flight1%>%mutate(test = ts(timeofday))
 ```
 
 ``` r
-flight_origin1<-flight%>%filter(on_time==FALSE)%>%group_by(timeofday,origin)%>%summarize(n=n())
+flight_origin1<-flight%>%filter(on_time==TRUE)%>%group_by(timeofday,origin)%>%summarize(n=n())
 ```
 
     ## `summarise()` has grouped output by 'timeofday'. You can override using the
@@ -243,17 +254,20 @@ ggplot(flight_origin)+
     theme(axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = 0.5))+
     xlab("hour of day")+
   ylab("proportion of delay flights")+
-  ggtitle("Average proportion of delays per hour of the day at 3 New York airports")
+  ggtitle("Average proportion of ontime per hour of the day at 3 New York airports")
 ```
+
+    ## Warning: Removed 1 row(s) containing missing values (geom_path).
 
 ![](assignment2-433_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 **Overall, the difference between the three airports is not obvious.
-Compared with the morning, the delay situation is slightly better in the
-afternoon and evening, and there is no particularly obvious
-pattern.**
+Compared with the morning, the ontime situation is slightly worse in the
+afternoon and evening, and there is no particularly obvious time serious
+pattern.However,do not choose EWR when you need to flight in the
+evening**
 
 ``` r
-flight_carrier1<-flight%>%filter(on_time==FALSE)%>%group_by(timeofday,carrier)%>%summarize(n=n())
+flight_carrier1<-flight%>%filter(on_time==TRUE)%>%group_by(timeofday,carrier)%>%summarize(n=n())
 ```
 
     ## `summarise()` has grouped output by 'timeofday'. You can override using the
@@ -279,19 +293,20 @@ ggplot(flight_carrier)+
     theme(axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = 0.5))+
       xlab("hour of day")+
   ylab("proportion of delay flights")+
-  ggtitle("Average proportion of delays per hour of the day for different flight companies")
+  ggtitle("Average proportion of ontime per hour of the day for different flight companies")
 ```
 
 ![](assignment2-433_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
 
 **Here, it is obvious that some airlines have incomplete data. Among
-relatively complete airlines, UA and B6 will have lower delay ratios
-than the rest of the large airlines (such as DL and AA, both of which
-have average delay ratios throughout the day but are above 0.6). The
-proportion of delays in EV and WN apparently decreased with morning and
-evening during the day. It is worth noting that VX has a high delay
-ratio close to 1 at 11:00 and 13:00. Meanwhile, most airlines perform
-better at night than during the day, with the exception of YV。**
+relatively complete airlines, AS ,DL and AA will have higher ratio
+ratios than the rest of the large airlines (such as UA and EV, both of
+which have average ontime ratios throughout the day but sometime nearly
+0.4). The proportion of ontime in EV and WN apparently decreased with
+morning and evening during the day. It is worth noting that VX has a
+high ontime ratio close to 1 at 11:00 and 13:00. Meanwhile, most
+airlines perform better at morning than during the day, with the
+exception of YV。**
 
 ``` r
  flights%>%filter(carrier=="HA")
@@ -324,7 +339,7 @@ dis<-flight%>%
   group_by(distance)%>%
   summarize(total=n())%>%
   left_join(flight%>%
-              filter(on_time == FALSE)%>%
+            filter(on_time == TRUE)%>%
               group_by(distance)%>%
               summarize(n=n()))%>%
   mutate(proportion = n/total)
@@ -338,9 +353,16 @@ ggplot(dis)+
   geom_point(aes(x =distance,y =proportion))+
     xlab("flight distance")+
   ylab("proportion of delay flights")+
-  ggtitle("Average proportion of delays versus flight distance ")
+  ggtitle("Average proportion of ontime versus flight distance ")
 ```
 
 ![](assignment2-433_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
 
-*From the graph, my guess seems to be an illusion*
+``` r
+mean(dis$proportion)
+```
+
+    ## [1] 0.5604062
+
+**From the graph, my guess seems to be True ,since when disatance is
+over 2000,the most ontime proportion is higher than the mean value.**
