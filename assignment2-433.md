@@ -3,6 +3,17 @@ assignment2-433
 Chenshuo Pan
 2022-10-07
 
+**This file analyzes the delays at New York airports at different times
+of the day, considering that the number of flights in each period is
+different, so here I use the ratio as a measure. The delay data is
+analyzed in combination with factors such as seasons, different
+airports, airlines, etc., and some experiments are carried out based on
+my own experience. In general, it is recommended to take flights in the
+mornings in winter and evenings in summer, and there is not much
+difference between the three airports in New York. Recommend United
+Airline in airline selection, Southwest Airlines in the evening, not
+Virgin America at noon.**
+
 ``` r
 library(dplyr)
 ```
@@ -179,23 +190,17 @@ flight_season <-left_join(flight_season2,flight_season1)%>%mutate(proportion = n
     ## Joining, by = c("timeofday", "season")
 
 ``` r
-ggplot()+
-  # geom_bar(mapping = aes(x = timeofday, y = n),stat="identity")+
-  geom_line(aes(x = flight_season$timeofday[flight_season$season=="Spring"],y = flight_season$proportion[flight_season$season=="Spring"]),group = 1,color="red")+
-  geom_line(aes(x = flight_season$timeofday[flight_season$season=="Summer"],y = flight_season$proportion[flight_season$season=="Summer"]),group = 1,color="green")+
-  geom_line(aes(x = flight_season$timeofday[flight_season$season=="Autumn"],y = flight_season$proportion[flight_season$season=="Autumn"]),group = 1,color="blue")+
-  geom_line(aes(x = flight_season$timeofday[flight_season$season=="Winter"],y = flight_season$proportion[flight_season$season=="Winter"]),group = 1,color="yellow")+
-  theme(axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = 0.5))+
+flight_season%>%ggplot(aes(x = timeofday,
+                           y = proportion,
+                           color = season))+
+  geom_line(group = flight_season$season)+
+theme(axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = 0.5))+
   xlab("hour of day")+
-  ylab("proportion of delay flights")+theme(legend.text = element_text(size = 8, colour = "red"))
+  ylab("proportion of delay flights")+theme(legend.text = element_text(size = 8, colour = "red"))+
+  ggtitle("Average proportion of delays time of the day for the four seasons")
 ```
 
 ![](assignment2-433_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
-
-``` r
-# legend("topleft",legend = c("Springm","Summer","Autumn","Winter"),col = c("red",'green','blue,’yellow'))
-```
-
 **Here, according to the four seasons, I have drawn the proportional
 curve of each time point. It can be clearly seen that the blue color is
 autumn, and the flight delay ratio is always higher than that of the
@@ -235,7 +240,10 @@ flight_origin <-left_join(flight_origin2,flight_origin1)%>%mutate(proportion = n
 ggplot(flight_origin)+
   geom_line(aes(x = timeofday,y = proportion),group = 1)+
   facet_grid(origin~.)+
-    theme(axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = 0.5))
+    theme(axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = 0.5))+
+    xlab("hour of day")+
+  ylab("proportion of delay flights")+
+  ggtitle("Average proportion of delays per hour of the day at 3 New York airports")
 ```
 
 ![](assignment2-433_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
@@ -268,7 +276,10 @@ flight_carrier <-left_join(flight_carrier2,flight_carrier1)%>%mutate(proportion 
 ggplot(flight_carrier)+
   geom_line(aes(x = timeofday,y = proportion),group = 1)+
   facet_wrap(carrier~.)+
-    theme(axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = 0.5))
+    theme(axis.text.x = element_text(angle = 45, hjust = 0.5, vjust = 0.5))+
+      xlab("hour of day")+
+  ylab("proportion of delay flights")+
+  ggtitle("Average proportion of delays per hour of the day for different flight companies")
 ```
 
 ![](assignment2-433_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
@@ -324,7 +335,10 @@ dis<-flight%>%
 ``` r
 dis[is.na(dis)]<-0
 ggplot(dis)+
-  geom_point(aes(x =distance,y =proportion))
+  geom_point(aes(x =distance,y =proportion))+
+    xlab("flight distance")+
+  ylab("proportion of delay flights")+
+  ggtitle("Average proportion of delays versus flight distance ")
 ```
 
 ![](assignment2-433_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
